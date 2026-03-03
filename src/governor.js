@@ -9,6 +9,8 @@
 
 const budgets = new Map();  // apiKey → budget config
 const usage = new Map();    // apiKey → usage tracking
+const blockedLog = [];      // Recent blocked requests (capped at 100)
+const MAX_BLOCKED_LOG = 100;
 
 const MODEL_COSTS = {
     'claude-3-5-sonnet': { input: 3.00, output: 15.00 },
@@ -72,6 +74,7 @@ function auditRequest(apiKey, body) {
     if (projectedTotal > budget.maxDollars) {
         result.blocked = true;
         result.reason = `Budget exceeded: $${projectedTotal.toFixed(2)} > $${budget.maxDollars} limit`;
+        logBlocked(hash, result);
         return result;
     }
 
@@ -79,6 +82,7 @@ function auditRequest(apiKey, body) {
     if (recentRequests.length >= budget.maxRequestsPerHour) {
         result.blocked = true;
         result.reason = `Rate limit: ${recentRequests.length} requests this hour (max: ${budget.maxRequestsPerHour})`;
+        logBlocked(hash, result);
         return result;
     }
 
@@ -86,6 +90,7 @@ function auditRequest(apiKey, body) {
     if (necessityScore <= 1 && track.requests.length > 10) {
         result.blocked = true;
         result.reason = `Low necessity score (${necessityScore}/10) — likely a waste loop`;
+        logBlocked(hash, result);
         return result;
     }
 
@@ -100,6 +105,17 @@ function auditRequest(apiKey, body) {
     track.requests.push(Date.now());
 
     return result;
+}
+
+function logBlocked(agentHash, result) {
+    blockedLog.unshift({
+        timestamp: new Date().toISOString(),
+        agent: agentHash,
+        reason: result.reason,
+        estimatedCost: result.estimatedCost,
+        necessityScore: result.necessityScore,
+    });
+    if (blockedLog.length > MAX_BLOCKED_LOG) blockedLog.length = MAX_BLOCKED_LOG;
 }
 
 /**
@@ -138,6 +154,7 @@ function getBudgetStatus() {
     const status = {};
     for (const [hash, track] of usage.entries()) {
         const budget = budgets.get(hash) || DEFAULT_BUDGET;
+        const recentRequests = track.requests.filter(t => Date.now() - t < 3600_000);
         status[hash] = {
             spent: track.totalDollars,
             budget: budget.maxDollars,
@@ -145,13 +162,22 @@ function getBudgetStatus() {
             percentUsed: Math.round((track.totalDollars / budget.maxDollars) * 100),
             totalTokens: track.totalTokens,
             totalRequests: track.requests.length,
+            maxTokens: budget.maxTokens,
+            maxRequestsPerHour: budget.maxRequestsPerHour,
+            requestsThisHour: recentRequests.length,
+            alertThreshold: budget.alertThreshold,
         };
     }
     return { agents: status, updatedAt: new Date().toISOString() };
 }
 
+function getBlockedLog() {
+    return blockedLog;
+}
+
 function resetBudgets() {
     usage.clear();
+    blockedLog.length = 0;
 }
 
 function keyHash(key) {
@@ -167,4 +193,4 @@ function simpleHash(str) {
     return hash.toString(36);
 }
 
-module.exports = { auditRequest, setBudget, getBudgetStatus, resetBudgets };
+module.exports = { auditRequest, setBudget, getBudgetStatus, getBlockedLog, resetBudgets };

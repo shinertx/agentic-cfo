@@ -1,14 +1,33 @@
 const express = require('express');
-const { auditRequest, getBudgetStatus, resetBudgets } = require('./governor');
+const path = require('path');
+const { auditRequest, getBudgetStatus, getBlockedLog, resetBudgets, setBudget } = require('./governor');
 
 const app = express();
 const PORT = process.env.PORT || 4020;
 
 app.use(express.json({ limit: '50mb' }));
 
-// ── Dashboard ───────────────────────────────────────────
+// ── Static files ────────────────────────────────────────
+app.use(express.static(path.join(__dirname, '..', 'public')));
+
+// ── Root → Dashboard ────────────────────────────────────
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'public', 'dashboard.html'));
+});
+
+// ── Health check ────────────────────────────────────────
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok', uptime: process.uptime(), timestamp: new Date().toISOString() });
+});
+
+// ── Dashboard API ───────────────────────────────────────
 app.get('/api/dashboard', (req, res) => {
     res.json(getBudgetStatus());
+});
+
+// ── Blocked requests log ────────────────────────────────
+app.get('/api/blocked', (req, res) => {
+    res.json(getBlockedLog());
 });
 
 // ── Reset budgets ───────────────────────────────────────
@@ -25,7 +44,6 @@ app.post('/api/budget', (req, res) => {
         return res.status(400).json({ error: { message: 'apiKey is required', type: 'validation_error' } });
     }
 
-    const { setBudget } = require('./governor');
     setBudget(apiKey, {
         maxDollars: maxDollars || 50,
         maxTokens: maxTokens || 10_000_000,
@@ -37,7 +55,7 @@ app.post('/api/budget', (req, res) => {
 });
 
 // ── Proxy endpoint — intercept and audit ────────────────
-app.all('/v1/*', async (req, res) => {
+app.all('/v1/*path', async (req, res) => {
     const apiKey = req.headers['authorization']?.replace('Bearer ', '')
         || req.headers['x-api-key']
         || 'unknown';
@@ -98,7 +116,8 @@ app.listen(PORT, () => {
 ╔═══════════════════════════════════════════════════════╗
 ║  💰 Agentic CFO — Running on port ${PORT}               ║
 ║  Budget governance for every AI agent API call        ║
-║  Dashboard: http://localhost:${PORT}/api/dashboard        ║
+║  Dashboard: http://localhost:${PORT}                      ║
 ╚═══════════════════════════════════════════════════════╝
   `);
 });
+
