@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentic CFO — Budget Governance for AI Agents | JockeyVC</title>
+    <meta name="description"
+        content="Set spend limits, audit every API call for necessity, and block wasteful agent behavior before it hits your wallet.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --surface: #12121a;
+            --border: #1e1e2e;
+            --text: #e4e4e7;
+            --text-muted: #71717a;
+            --gold: #f59e0b;
+            --gold-glow: rgba(245, 158, 11, 0.15);
+            --green: #22c55e;
+            --green-glow: rgba(34, 197, 94, 0.15);
+            --red: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 50% 30%, var(--gold-glow) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            padding: .4rem 1rem;
+            font-size: .85rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        h1 {
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            max-width: 800px;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        h1 .highlight {
+            background: linear-gradient(135deg, var(--gold), #f97316);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        /* Feature Cards */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            max-width: 1000px;
+            padding: 2rem;
+            margin: 0 auto;
+        }
+
+        .feature {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: border-color .3s, transform .3s;
+        }
+
+        .feature:hover {
+            border-color: var(--gold);
+            transform: translateY(-4px);
+        }
+
+        .feature .icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature h3 {
+            margin-bottom: .5rem;
+        }
+
+        .feature p {
+            color: var(--text-muted);
+            font-size: .9rem;
+        }
+
+        /* Dashboard preview */
+        .dashboard-preview {
+            max-width: 700px;
+            margin: 4rem auto;
+            padding: 0 2rem;
+        }
+
+        .dash-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+        }
+
+        .dash-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .dash-header h3 {
+            font-size: 1.2rem;
+        }
+
+        .dash-header .live-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: .4;
+            }
+        }
+
+        .budget-bar {
+            background: #1a1a2e;
+            border-radius: 8px;
+            height: 24px;
+            overflow: hidden;
+            margin-bottom: .5rem;
+        }
+
+        .budget-fill {
+            height: 100%;
+            border-radius: 8px;
+            background: linear-gradient(90deg, var(--green), var(--gold));
+            transition: width 1s;
+        }
+
+        .budget-labels {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-muted);
+            font-size: .85rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .agent-row {
+            display: flex;
+            justify-content: space-between;
+            padding: .75rem 0;
+            border-bottom: 1px solid var(--border);
+            font-size: .9rem;
+        }
+
+        .agent-row:last-child {
+            border: none;
+        }
+
+        .agent-row .status-ok {
+            color: var(--green);
+        }
+
+        .agent-row .status-warn {
+            color: var(--gold);
+        }
+
+        .agent-row .status-blocked {
+            color: var(--red);
+        }
+
+        .cta {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .cta-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--gold), #f97316);
+            color: white;
+            text-decoration: none;
+            padding: 1rem 2.5rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: transform .2s;
+        }
+
+        .cta-btn:hover {
+            transform: scale(1.05);
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            font-size: .85rem;
+            border-top: 1px solid var(--border);
+        }
+
+        footer a {
+            color: var(--gold);
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+    <section class="hero">
+        <div class="badge">💰 Budget Governance Layer</div>
+        <h1>Your AI agents need a <span class="highlight">CFO</span></h1>
+        <p class="subtitle">Set spend limits. Audit every API call for necessity. Block wasteful agent behavior before
+            it hits your wallet.</p>
+    </section>
+
+    <section class="features">
+        <div class="feature">
+            <div class="icon">🎯</div>
+            <h3>Necessity Scoring</h3>
+            <p>Every API call scored 0-10. Duplicate reads, status pings on expensive models, and waste loops get
+                flagged instantly.</p>
+        </div>
+        <div class="feature">
+            <div class="icon">🚫</div>
+            <h3>Hard Budget Limits</h3>
+            <p>Set max dollars, max tokens, and max requests per hour per API key. Exceeding = blocked.</p>
+        </div>
+        <div class="feature">
+            <div class="icon">⚡</div>
+            <h3>Real-Time Dashboard</h3>
+            <p>See spend per agent, per hour, per model. Know exactly where your money goes.</p>
+        </div>
+        <div class="feature">
+            <div class="icon">🔄</div>
+            <h3>Loop Detection</h3>
+            <p>If necessity score drops below 1 and the agent is looping, the CFO hard-severs the connection.</p>
+        </div>
+    </section>
+
+    <section class="dashboard-preview">
+        <div class="dash-card">
+            <div class="dash-header">
+                <h3>Agent Budget Status</h3>
+                <div class="live-dot"></div>
+            </div>
+            <div class="budget-bar">
+                <div class="budget-fill" style="width: 62%"></div>
+            </div>
+            <div class="budget-labels"><span>$31.00 spent</span><span>$50.00 budget</span></div>
+            <div style="margin-top: 1.5rem;">
+                <div class="agent-row"><span>Claude Code (proxy-engineer)</span><span class="status-ok">✅ $12.40 /
+                        $25</span></div>
+                <div class="agent-row"><span>OpenClaw (research-agent)</span><span class="status-warn">⚠️ $16.20 /
+                        $20</span></div>
+                <div class="agent-row"><span>AutoGPT (data-agent)</span><span class="status-blocked">🚫 BLOCKED ($2.40
+                        waste loop)</span></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta">
+        <a href="https://github.com/shinertx/agentic-cfo" class="cta-btn">Get Started on GitHub →</a>
+    </section>
+
+    <footer>
+        <p>Built by <a href="https://jockeyvc.com">JockeyVC</a> · Part of the Agentic Infrastructure Suite</p>
+    </footer>
+</body>
+
+</html>

@@ -1,0 +1,30 @@
+{
+    "name": "@jockeyvc/agentic-cfo",
+    "version": "1.0.0",
+    "description": "Budget governance layer for AI agents — audits every API call for necessity, enforces spend limits, and generates cost reports",
+    "main": "src/index.js",
+    "scripts": {
+        "start": "node src/index.js",
+        "dev": "node --watch src/index.js",
+        "test": "node tests/budget.test.js"
+    },
+    "keywords": [
+        "ai",
+        "agent",
+        "budget",
+        "governance",
+        "cfo",
+        "billing",
+        "cost"
+    ],
+    "author": "JockeyVC",
+    "license": "MIT",
+    "dependencies": {
+        "express": "^5.1.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/shinertx/agentic-cfo"
+    },
+    "homepage": "https://cfo.jockeyvc.com"
+}
